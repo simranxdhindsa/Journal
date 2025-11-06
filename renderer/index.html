@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Daily Journal</title>
+	<link rel="stylesheet" href="styles.css" />
+	<link rel="stylesheet" href="../node_modules/flatpickr/dist/flatpickr.min.css" />
+</head>
+<body>
+	<div class="app">
+		<aside class="sidebar glass">
+			<div class="sidebar-header">
+				<div class="brand">Journal</div>
+				<button id="btn-theme" class="btn-icon" title="Toggle theme">🌓</button>
+			</div>
+			<div class="titled-entries-section">
+				<div class="section-header">
+					<span class="section-title">Entries</span>
+					<button id="btn-new-entry" class="btn-add" title="New Entry">+</button>
+				</div>
+				<div id="entries-list" class="entries-list"></div>
+			</div>
+			<div id="calendar"></div>
+		</aside>
+		<main class="editor-pane glass">
+			<header class="editor-header">
+				<div id="date-display">—</div>
+				<div id="editor-toolbar">
+					<button id="btn-today" class="btn">Today</button>
+					<button id="btn-export" class="btn">Export</button>
+					<button id="btn-import" class="btn">Import</button>
+					<button id="btn-open-folder" class="btn">Open Data</button>
+				</div>
+				<div id="save-indicator">Saved</div>
+			</header>
+			<div id="editor"></div>
+		</main>
+	</div>
+
+	<script src="../node_modules/tinymce/tinymce.min.js"></script>
+	<script src="../node_modules/flatpickr/dist/flatpickr.min.js"></script>
+	<script src="calendar.js"></script>
+	<script src="editor.js"></script>
+	<script src="app.js"></script>
+</body>
+</html>
+
+
