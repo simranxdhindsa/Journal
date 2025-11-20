@@ -321,4 +321,90 @@ async function recoverFromTmp() {
 	await walk(base);
 }
 
+// Multiple notes per date support
+function getDateNotesDir(iso) {
+	const { y, m, d } = dateToParts(iso);
+	const dir = path.join(getEntriesDir(), y, m, d);
+	if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+	return dir;
+}
+
+function getDateNotePath(iso, noteId) {
+	const dir = getDateNotesDir(iso);
+	return path.join(dir, `${noteId}.json`);
+}
+
+ipcMain.handle('journal:loadDateNotes', async (_e, iso) => {
+	const dir = getDateNotesDir(iso);
+	const notes = [];
+
+	if (fs.existsSync(dir)) {
+		const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+		for (const file of files) {
+			const noteData = await readJSONSafe(path.join(dir, file));
+			if (noteData && noteData.id) {
+				notes.push(noteData);
+			}
+		}
+	}
+
+	// Sort by creation time (derived from ID)
+	notes.sort((a, b) => {
+		const timeA = a.id.split('_')[1] || '0';
+		const timeB = b.id.split('_')[1] || '0';
+		return timeA.localeCompare(timeB);
+	});
+
+	return notes;
+});
+
+ipcMain.handle('journal:saveDateNote', async (_e, noteData) => {
+	const { date, noteId, title, html } = noteData;
+	const file = getDateNotePath(date, noteId);
+
+	const toWrite = {
+		id: noteId,
+		title: title || 'Untitled Note',
+		html: html || '',
+		updatedAt: new Date().toISOString(),
+		wordCount: (html.replace(/<[^>]*>/g, ' ').match(/\S+/g) || []).length,
+		version: 1
+	};
+
+	await writeJSONAtomic(file, toWrite);
+	await touchIndexDate(date);
+	return true;
+});
+
+ipcMain.handle('journal:deleteDateNote', async (_e, iso, noteId) => {
+	const file = getDateNotePath(iso, noteId);
+	if (fs.existsSync(file)) {
+		await fsp.unlink(file);
+	}
+
+	// Check if directory is empty and remove from index if needed
+	const dir = getDateNotesDir(iso);
+	const remainingFiles = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+	if (remainingFiles.length === 0) {
+		// Remove date from index
+		const idx = await readIndex();
+		idx.dates = (idx.dates || []).filter(d => d !== iso);
+		await writeJSONAtomic(getIndexPath(), idx);
+	}
+
+	return true;
+});
+
+// Add missing getIndexPath function
+function getIndexPath() {
+	return path.join(getUserRoot(), 'index.json');
+}
+
+// Update openDataFolder handler
+ipcMain.handle('journal:openDataFolder', async () => {
+	const folder = getUserRoot();
+	shell.openPath(folder);
+	return true;
+});
+
 

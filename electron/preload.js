@@ -9,11 +9,18 @@ contextBridge.exposeInMainWorld('journal', {
 	exportAll: (targetDir) => ipcRenderer.invoke('journal:exportAll', targetDir),
 	importFrom: (sourceDir) => ipcRenderer.invoke('journal:importFrom', sourceDir),
 	openDataFolder: () => ipcRenderer.invoke('journal:openDataFolder'),
+
+	// Standalone titled entries
 	listTitledEntries: () => ipcRenderer.invoke('journal:listTitledEntries'),
 	createTitledEntry: (title) => ipcRenderer.invoke('journal:createTitledEntry', title),
 	loadTitledEntry: (id) => ipcRenderer.invoke('journal:loadTitledEntry', id),
 	saveTitledEntry: (entry) => ipcRenderer.invoke('journal:saveTitledEntry', entry),
-	deleteTitledEntry: (id) => ipcRenderer.invoke('journal:deleteTitledEntry', id)
+	deleteTitledEntry: (id) => ipcRenderer.invoke('journal:deleteTitledEntry', id),
+
+	// Multiple notes per date
+	loadDateNotes: (date) => ipcRenderer.invoke('journal:loadDateNotes', date),
+	saveDateNote: (note) => ipcRenderer.invoke('journal:saveDateNote', note),
+	deleteDateNote: (date, noteId) => ipcRenderer.invoke('journal:deleteDateNote', date, noteId)
 });
 
 

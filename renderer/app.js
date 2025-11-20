@@ -1,6 +1,7 @@
 (() => {
 	const dateDisplay = document.getElementById('date-display');
 	const saveIndicator = document.getElementById('save-indicator');
+	const btnAddNote = document.getElementById('btn-add-note');
 	const btnToday = document.getElementById('btn-today');
 	const btnExport = document.getElementById('btn-export');
 	const btnImport = document.getElementById('btn-import');
@@ -8,13 +9,13 @@
 	const btnTheme = document.getElementById('btn-theme');
 	const btnNewEntry = document.getElementById('btn-new-entry');
 	const entriesList = document.getElementById('entries-list');
+	const notesContainer = document.getElementById('notes-container');
 
-	let currentDate = null; // ISO YYYY-MM-DD or null
-	let currentTitledId = null; // ID of current titled entry or null
-	let autosaveTimer = null;
-	let isSaving = false;
+	let currentDate = null;
+	let currentTitledId = null;
 	let currentTheme = localStorage.getItem('journal-theme') || 'system';
 	let currentMode = 'date'; // 'date' or 'titled'
+	let notesManager = null;
 
 	function applyTheme(theme) {
 		currentTheme = theme;
@@ -43,7 +44,6 @@
 	}
 
 	function setSaving(state) {
-		isSaving = state;
 		saveIndicator.textContent = state ? 'Saving…' : 'Saved';
 	}
 
@@ -51,11 +51,18 @@
 		currentDate = date;
 		currentTitledId = null;
 		currentMode = 'date';
+
 		const [y, m, d] = date.split('-').map(Number);
 		const dateObj = new Date(y, m - 1, d);
-		dateDisplay.textContent = dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-		const entry = await window.journal.loadEntry(date);
-		window.editorSetHTML(entry?.html || '');
+		dateDisplay.textContent = dateObj.toLocaleDateString('en-US', {
+			weekday: 'long',
+			year: 'numeric',
+			month: 'long',
+			day: 'numeric'
+		});
+
+		await notesManager.loadDate(date);
+
 		if (window.setCalendarDate) window.setCalendarDate(date);
 		window.refreshCalendar && window.refreshCalendar();
 		updateEntriesList();
@@ -65,10 +72,15 @@
 		currentTitledId = id;
 		currentDate = null;
 		currentMode = 'titled';
+
 		const entry = await window.journal.loadTitledEntry(id);
 		if (entry) {
 			dateDisplay.textContent = entry.title || 'Untitled Entry';
-			window.editorSetHTML(entry.html || '');
+
+			// For standalone entries, show single note
+			notesManager.clear();
+			notesManager.currentDate = `titled_${id}`;
+			notesManager.createNoteCard(id, entry.title || 'Untitled Entry', entry.html || '');
 		}
 		updateEntriesList();
 	}
@@ -94,47 +106,55 @@
 	}
 
 	async function init() {
+		// Initialize theme
 		applyTheme(currentTheme);
+
+		// Initialize notes manager
+		notesManager = new NotesManager(notesContainer);
+		notesManager.setOnChange(() => {
+			setSaving(true);
+			setTimeout(() => setSaving(false), 500);
+			window.refreshCalendar && window.refreshCalendar();
+		});
+
+		// Event listeners
 		if (btnTheme) btnTheme.addEventListener('click', toggleTheme);
 		if (btnNewEntry) btnNewEntry.addEventListener('click', createNewEntry);
-		await updateEntriesList();
-		const today = await window.journal.getToday();
-		await loadDate(today);
-		initCalendar(async (picked) => {
-			await loadDate(picked);
+		if (btnAddNote) btnAddNote.addEventListener('click', () => {
+			if (currentMode === 'date' && currentDate) {
+				notesManager.addNewNote();
+			}
 		});
-		initEditor(onEditorChanged);
+
 		btnToday.addEventListener('click', async () => {
-			const t = await window.journal.getToday();
-			await loadDate(t);
+			const today = await window.journal.getToday();
+			await loadDate(today);
 		});
+
 		btnExport.addEventListener('click', async () => {
 			await window.journal.exportAll('');
 		});
+
 		btnImport.addEventListener('click', async () => {
 			await window.journal.importFrom('');
 			window.refreshCalendar && window.refreshCalendar();
 		});
+
 		btnOpenFolder.addEventListener('click', async () => {
 			await window.journal.openDataFolder();
 		});
-	}
 
-	function onEditorChanged() {
-		if (autosaveTimer) clearTimeout(autosaveTimer);
-		autosaveTimer = setTimeout(async () => {
-			setSaving(true);
-			const html = window.editorGetHTML();
-			const wordCount = (html.replace(/<[^>]*>/g, ' ').match(/\S+/g) || []).length;
-			if (currentMode === 'date' && currentDate) {
-				await window.journal.saveEntry({ date: currentDate, html, wordCount });
-			} else if (currentMode === 'titled' && currentTitledId) {
-				const entry = await window.journal.loadTitledEntry(currentTitledId);
-				await window.journal.saveTitledEntry({ id: currentTitledId, title: entry?.title || 'Untitled Entry', html, wordCount });
-				await updateEntriesList();
-			}
-			setSaving(false);
-		}, 800);
+		// Initialize calendar
+		initCalendar(async (picked) => {
+			await loadDate(picked);
+		});
+
+		// Load standalone entries list
+		await updateEntriesList();
+
+		// Load today's date
+		const today = await window.journal.getToday();
+		await loadDate(today);
 	}
 
 	window.addEventListener('DOMContentLoaded', init);

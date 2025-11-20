@@ -5,7 +5,7 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>Daily Journal</title>
-	<link rel="stylesheet" href="styles.css" />
+	<link rel="stylesheet" href="glass.css" />
 	<link rel="stylesheet" href="../node_modules/flatpickr/dist/flatpickr.min.css" />
 </head>
 <body>
@@ -17,7 +17,7 @@
 			</div>
 			<div class="titled-entries-section">
 				<div class="section-header">
-					<span class="section-title">Entries</span>
+					<span class="section-title">Standalone Notes</span>
 					<button id="btn-new-entry" class="btn-add" title="New Entry">+</button>
 				</div>
 				<div id="entries-list" class="entries-list"></div>
@@ -28,6 +28,7 @@
 			<header class="editor-header">
 				<div id="date-display">—</div>
 				<div id="editor-toolbar">
+					<button id="btn-add-note" class="btn">+ Add Note</button>
 					<button id="btn-today" class="btn">Today</button>
 					<button id="btn-export" class="btn">Export</button>
 					<button id="btn-import" class="btn">Import</button>
@@ -35,14 +36,14 @@
 				</div>
 				<div id="save-indicator">Saved</div>
 			</header>
-			<div id="editor"></div>
+			<div id="notes-container" class="notes-container"></div>
 		</main>
 	</div>
 
-	<script src="../node_modules/tinymce/tinymce.min.js"></script>
 	<script src="../node_modules/flatpickr/dist/flatpickr.min.js"></script>
+	<script src="richEditor.js"></script>
 	<script src="calendar.js"></script>
-	<script src="editor.js"></script>
+	<script src="notesManager.js"></script>
 	<script src="app.js"></script>
 </body>
 </html>
